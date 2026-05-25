@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#f6f7fb" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="PFC" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+  <title>PFC 管理</title>
+</head>
+<body>
+  <main id="app">
+
+    <!-- ===== 入力タブ ===== -->
+    <section class="tab-panel active" id="panel-entry">
+      <div class="panel-sticky-head">
+        <div class="day-nav">
+          <button class="day-nav-btn" id="prevDay" aria-label="前日">◁</button>
+          <span class="day-nav-label" id="dayNavLabel">----年--月--日</span>
+          <button class="day-nav-btn" id="nextDay" aria-label="翌日">▷</button>
+        </div>
+      </div>
+      <div class="summary-card weekly-card" id="dailySummary"></div>
+      <div class="summary-card weekly-card" id="weeklySummary"></div>
+      <div class="meal-sections" id="mealSections"></div>
+      <div class="meal-sections" id="exerciseSections"></div>
+      <p class="sync-status" id="syncStatus"></p>
+    </section>
+
+    <!-- ===== カレンダータブ ===== -->
+    <section class="tab-panel" id="panel-calendar">
+      <div class="panel-sticky-head">
+        <div class="day-nav">
+          <button class="day-nav-btn" id="prevMonth" aria-label="前月">◁</button>
+          <span class="day-nav-label" id="calMonthLabel">----年--月</span>
+          <button class="day-nav-btn" id="nextMonth" aria-label="翌月">▷</button>
+        </div>
+      </div>
+      <div class="summary-card weekly-card" id="calMonthSummary"></div>
+      <div class="cal-legend">
+        <span><span class="cal-legend-dot ok"></span>目標内</span>
+        <span><span class="cal-legend-dot over"></span>超過</span>
+        <span><span class="cal-legend-dot recorded"></span>記録のみ</span>
+      </div>
+      <div class="cal-dows" id="calDows"></div>
+      <div class="cal-cells" id="calGrid"></div>
+    </section>
+
+    <!-- ===== 設定タブ ===== -->
+    <section class="tab-panel" id="panel-settings">
+
+      <div class="settings-block">
+        <div class="settings-block-head">
+          <span class="settings-block-title">1日あたりの目標</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">カロリー上限</span>
+          <input type="text" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="targetKcal" placeholder="2000" min="0" />
+          <span class="settings-row-unit">kcal</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">たんぱく質（最低）</span>
+          <input type="text" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="targetProtein" placeholder="120" min="0" />
+          <span class="settings-row-unit">g</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">脂質（上限）</span>
+          <input type="text" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="targetFat" placeholder="55" min="0" />
+          <span class="settings-row-unit">g</span>
+        </div>
+      </div>
+
+      <div class="settings-actions" style="margin: 0 16px 12px;">
+        <button class="btn-primary" id="saveTargetsBtn" type="button">目標を保存</button>
+      </div>
+
+      <div class="settings-block">
+        <div class="settings-block-head">
+          <span class="settings-block-title">食事テンプレート</span>
+          <button class="btn-link" id="addPresetBtn" type="button">＋ 新規登録</button>
+        </div>
+        <p class="settings-hint">弁当・プロテイン・定番おやつなど、毎回 PFC を打ち込まなくて済むようワンタップで呼び出せます。</p>
+        <div class="preset-list" id="presetList"></div>
+      </div>
+
+      <details class="settings-block settings-advanced">
+        <summary class="settings-advanced-summary">
+          <span class="settings-block-title">高度な設定（GAS 同期）</span>
+          <span class="settings-advanced-caret">▾</span>
+        </summary>
+        <div class="settings-advanced-body">
+          <p class="settings-hint" style="margin-bottom:10px">スプレッドシートにバックアップしたい場合のみ設定してください。誤って消すと同期が止まるので、普段は閉じておきます。</p>
+          <label class="settings-label">
+            GAS Web App URL
+            <input type="url" id="gasUrlInput" placeholder="https://script.google.com/macros/s/..." />
+          </label>
+          <label class="settings-label">
+            共有シークレット（GAS の SHARED_SECRET と一致）
+            <input type="text" id="gasTokenInput" placeholder="例: 4f7d2b... 任意のランダム文字列" autocomplete="off" />
+          </label>
+          <p class="settings-hint">GAS 側で <code>SHARED_SECRET</code> をスクリプトプロパティに設定した場合、同じ値を入れてください。未設定なら空欄でOK。</p>
+          <div class="settings-actions">
+            <button class="btn-secondary" id="saveGasUrlBtn" type="button">GAS設定を保存</button>
+          </div>
+          <hr class="settings-divider" />
+          <p class="settings-hint" style="margin-bottom:10px">localStorage に貯まっているデータを <b>そのまま全部</b> スプレッドシートへ反映します。スプレッドシートの同名シートは上書きされます。</p>
+          <div class="settings-actions">
+            <button class="btn-secondary" id="pushAllBtn" type="button">現在のデータを GAS に全送信</button>
+          </div>
+        </div>
+      </details>
+
+      <div class="settings-block">
+        <button class="btn-link" id="exportData" type="button">データをエクスポート</button>
+      </div>
+    </section>
+
+    <!-- ===== フローティング電卓ボタン ===== -->
+    <button class="fab-calc" id="fabCalc" type="button" aria-label="電卓を開く">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="4" y="2" width="16" height="20" rx="2.5"/>
+        <line x1="8" y1="6" x2="16" y2="6"/>
+        <line x1="8" y1="11" x2="8.01" y2="11"/>
+        <line x1="12" y1="11" x2="12.01" y2="11"/>
+        <line x1="16" y1="11" x2="16.01" y2="11"/>
+        <line x1="8" y1="15" x2="8.01" y2="15"/>
+        <line x1="12" y1="15" x2="12.01" y2="15"/>
+        <line x1="16" y1="15" x2="16.01" y2="15"/>
+        <line x1="8" y1="19" x2="8.01" y2="19"/>
+        <line x1="12" y1="19" x2="12.01" y2="19"/>
+        <line x1="16" y1="19" x2="16.01" y2="19"/>
+      </svg>
+    </button>
+
+    <!-- ===== ボトムナビ ===== -->
+    <nav class="bottom-nav">
+      <button class="bnav-btn active" data-tab="entry">
+        <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        <span class="bnav-label">入力</span>
+      </button>
+      <button class="bnav-btn" data-tab="calendar">
+        <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span class="bnav-label">カレンダー</span>
+      </button>
+      <button class="bnav-btn" data-tab="settings">
+        <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span class="bnav-label">設定</span>
+      </button>
+    </nav>
+
+    <!-- ===== PFC 入力モーダル ===== -->
+    <div class="modal" id="mealModal" hidden>
+      <div class="modal-content meal-modal">
+        <div class="entry-modal-head">
+          <span class="entry-modal-cat">
+            <span id="mealModalTitle">食事を追加</span>
+            <span class="entry-modal-badge" id="mealModalBadge">朝食</span>
+          </span>
+          <button class="icon-btn" id="closeMealBtn" aria-label="閉じる">✕</button>
+        </div>
+
+        <div class="preset-chips" id="mealPresetChips"></div>
+
+        <div class="pfc-grid">
+          <label class="pfc-input">
+            <span class="pfc-input-label">カロリー</span>
+            <div class="pfc-input-row">
+              <input type="text" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="mealKcal" min="0" step="1" placeholder="必須" />
+              <span class="pfc-input-unit">kcal</span>
+            </div>
+          </label>
+          <label class="pfc-input">
+            <span class="pfc-input-label">たんぱく質</span>
+            <div class="pfc-input-row">
+              <input type="text" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="mealProtein" min="0" step="0.1" placeholder="0" />
+              <span class="pfc-input-unit">g</span>
+            </div>
+          </label>
+          <label class="pfc-input">
+            <span class="pfc-input-label">脂質</span>
+            <div class="pfc-input-row">
+              <input type="text" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="mealFat" min="0" step="0.1" placeholder="0" />
+              <span class="pfc-input-unit">g</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-secondary" id="deleteMealBtn" type="button" hidden>削除</button>
+          <button class="btn-primary" id="saveMealBtn" type="button">記録する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 運動 入力モーダル ===== -->
+    <div class="modal" id="exerciseModal" hidden>
+      <div class="modal-content">
+        <div class="entry-modal-head">
+          <span class="entry-modal-cat" id="exerciseModalTitle">運動を追加</span>
+          <button class="icon-btn" id="closeExerciseBtn" aria-label="閉じる">✕</button>
+        </div>
+
+        <label class="entry-field">
+          <span class="entry-field-label">種目</span>
+          <input type="text" id="exerciseName" placeholder="例: ジョギング / 筋トレ" maxlength="40" />
+        </label>
+
+        <div class="pfc-grid">
+          <label class="pfc-input">
+            <span class="pfc-input-label">消費カロリー</span>
+            <div class="pfc-input-row">
+              <input type="text" inputmode="numeric" pattern="[0-9]*" id="exerciseKcal" min="0" step="1" placeholder="必須" />
+              <span class="pfc-input-unit">kcal</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-secondary" id="deleteExerciseBtn" type="button" hidden>削除</button>
+          <button class="btn-primary" id="saveExerciseBtn" type="button">記録する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 電卓モーダル ===== -->
+    <div class="modal" id="calcModal" hidden>
+      <div class="modal-content calc-modal">
+        <div class="entry-modal-head">
+          <span class="entry-modal-cat">電卓</span>
+          <button class="icon-btn" id="closeCalcBtn" aria-label="閉じる">✕</button>
+        </div>
+        <div class="calc-target" id="calcTargetLabel">入力対象を選んでから開いてください</div>
+        <div class="calc-display" id="calcDisplay">0</div>
+        <div class="calc-keys">
+          <button class="calc-key calc-fn" data-key="AC" type="button">AC</button>
+          <button class="calc-key calc-fn" data-key="back" type="button">⌫</button>
+          <button class="calc-key calc-op" data-key="÷" type="button">÷</button>
+          <button class="calc-key calc-op" data-key="×" type="button">×</button>
+          <button class="calc-key" data-key="7" type="button">7</button>
+          <button class="calc-key" data-key="8" type="button">8</button>
+          <button class="calc-key" data-key="9" type="button">9</button>
+          <button class="calc-key calc-op" data-key="-" type="button">−</button>
+          <button class="calc-key" data-key="4" type="button">4</button>
+          <button class="calc-key" data-key="5" type="button">5</button>
+          <button class="calc-key" data-key="6" type="button">6</button>
+          <button class="calc-key calc-op" data-key="+" type="button">+</button>
+          <button class="calc-key" data-key="1" type="button">1</button>
+          <button class="calc-key" data-key="2" type="button">2</button>
+          <button class="calc-key" data-key="3" type="button">3</button>
+          <button class="calc-key calc-op calc-eq" data-key="=" type="button">=</button>
+          <button class="calc-key" data-key="0" type="button">0</button>
+          <button class="calc-key" data-key="." type="button">.</button>
+          <button class="btn-primary calc-apply" id="calcApplyBtn" type="button">この値を入力</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 食事テンプレート編集モーダル ===== -->
+    <div class="modal" id="presetModal" hidden>
+      <div class="modal-content meal-modal">
+        <div class="entry-modal-head">
+          <span class="entry-modal-cat" id="presetModalTitle">食事テンプレートを登録</span>
+          <button class="icon-btn" id="closePresetBtn" aria-label="閉じる">✕</button>
+        </div>
+
+        <label class="entry-field">
+          <span class="entry-field-label">名前</span>
+          <input type="text" id="presetName" placeholder="例: 高たんぱく弁当" maxlength="30" />
+        </label>
+
+        <div class="pfc-grid">
+          <label class="pfc-input">
+            <span class="pfc-input-label">カロリー</span>
+            <div class="pfc-input-row">
+              <input type="text" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="presetKcal" min="0" step="1" placeholder="必須" />
+              <span class="pfc-input-unit">kcal</span>
+            </div>
+          </label>
+          <label class="pfc-input">
+            <span class="pfc-input-label">たんぱく質</span>
+            <div class="pfc-input-row">
+              <input type="text" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="presetProtein" min="0" step="0.1" placeholder="0" />
+              <span class="pfc-input-unit">g</span>
+            </div>
+          </label>
+          <label class="pfc-input">
+            <span class="pfc-input-label">脂質</span>
+            <div class="pfc-input-row">
+              <input type="text" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" id="presetFat" min="0" step="0.1" placeholder="0" />
+              <span class="pfc-input-unit">g</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-secondary" id="deletePresetBtn" type="button" hidden>削除</button>
+          <button class="btn-primary" id="savePresetBtn" type="button">保存</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
