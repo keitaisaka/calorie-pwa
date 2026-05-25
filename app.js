@@ -251,14 +251,10 @@ function renderDailySummary() {
   // 実質摂取 = 摂取 - 消費
   const netKcal = totals.kcal - burn;
 
-  const intakeSub = burn > 0
-    ? `摂取 ${fmtInt(totals.kcal)} − 消費 ${fmtInt(burn)} = ${fmtInt(netKcal)} kcal`
-    : `摂取 ${fmtInt(totals.kcal)} kcal`;
-
   root.innerHTML = `
     <div class="summary-card-head">
       <span class="summary-card-title">今日の残り</span>
-      <span class="summary-card-sub">${intakeSub}</span>
+      ${burn > 0 ? `<span class="summary-card-sub">消費 ${fmtInt(burn)} kcal</span>` : ''}
     </div>
     ${progressRow('カロリー',   'kcal', netKcal,        t.daily_kcal,    'kcal', 'cap')}
     ${progressRow('たんぱく質', 'p',    totals.protein, t.daily_protein, 'g',    'min')}
@@ -306,7 +302,7 @@ function progressRow(label, cls, consumed, target, unit, mode) {
     <div class="summary-row">
       <span class="summary-row-label ${cls}">${label}</span>
       <div class="summary-bar"><div class="summary-bar-fill ${cls}${over ? ' over' : ''}" style="width:${Math.min(100, Math.max(0, pct))}%"></div></div>
-      <span class="summary-row-value ${valueCls}">${valueHtml}<span class="summary-row-sub">/ ${fmtVal(target)} (${pct.toFixed(0)}%)</span></span>
+      <span class="summary-row-value ${valueCls}">${valueHtml}<span class="summary-row-sub">${fmtVal(consumed)} / ${fmtVal(target)} (${pct.toFixed(0)}%)</span></span>
     </div>
   `;
 }

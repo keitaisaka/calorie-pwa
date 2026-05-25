@@ -1,6 +1,6 @@
 // Service Worker — 静的ファイルをキャッシュしてオフライン対応
 // 開発（localhost）では network-first、本番では cache-first
-const CACHE = 'calorie-pwa-v23';
+const CACHE = 'calorie-pwa-v25';
 const ASSETS = [
   './',
   'index.html',
