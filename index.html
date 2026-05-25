@@ -120,23 +120,6 @@
       </div>
     </section>
 
-    <!-- ===== フローティング電卓ボタン ===== -->
-    <button class="fab-calc" id="fabCalc" type="button" aria-label="電卓を開く">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="4" y="2" width="16" height="20" rx="2.5"/>
-        <line x1="8" y1="6" x2="16" y2="6"/>
-        <line x1="8" y1="11" x2="8.01" y2="11"/>
-        <line x1="12" y1="11" x2="12.01" y2="11"/>
-        <line x1="16" y1="11" x2="16.01" y2="11"/>
-        <line x1="8" y1="15" x2="8.01" y2="15"/>
-        <line x1="12" y1="15" x2="12.01" y2="15"/>
-        <line x1="16" y1="15" x2="16.01" y2="15"/>
-        <line x1="8" y1="19" x2="8.01" y2="19"/>
-        <line x1="12" y1="19" x2="12.01" y2="19"/>
-        <line x1="16" y1="19" x2="16.01" y2="19"/>
-      </svg>
-    </button>
-
     <!-- ===== ボトムナビ ===== -->
     <nav class="bottom-nav">
       <button class="bnav-btn active" data-tab="entry">
@@ -234,39 +217,6 @@
         <div class="modal-actions">
           <button class="btn-secondary" id="deleteExerciseBtn" type="button" hidden>削除</button>
           <button class="btn-primary" id="saveExerciseBtn" type="button">記録する</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== 電卓モーダル ===== -->
-    <div class="modal" id="calcModal" hidden>
-      <div class="modal-content calc-modal">
-        <div class="entry-modal-head">
-          <span class="entry-modal-cat">電卓</span>
-          <button class="icon-btn" id="closeCalcBtn" aria-label="閉じる">✕</button>
-        </div>
-        <div class="calc-target" id="calcTargetLabel">入力対象を選んでから開いてください</div>
-        <div class="calc-display" id="calcDisplay">0</div>
-        <div class="calc-keys">
-          <button class="calc-key calc-fn" data-key="AC" type="button">AC</button>
-          <button class="calc-key calc-fn" data-key="back" type="button">⌫</button>
-          <button class="calc-key calc-op" data-key="÷" type="button">÷</button>
-          <button class="calc-key calc-op" data-key="×" type="button">×</button>
-          <button class="calc-key" data-key="7" type="button">7</button>
-          <button class="calc-key" data-key="8" type="button">8</button>
-          <button class="calc-key" data-key="9" type="button">9</button>
-          <button class="calc-key calc-op" data-key="-" type="button">−</button>
-          <button class="calc-key" data-key="4" type="button">4</button>
-          <button class="calc-key" data-key="5" type="button">5</button>
-          <button class="calc-key" data-key="6" type="button">6</button>
-          <button class="calc-key calc-op" data-key="+" type="button">+</button>
-          <button class="calc-key" data-key="1" type="button">1</button>
-          <button class="calc-key" data-key="2" type="button">2</button>
-          <button class="calc-key" data-key="3" type="button">3</button>
-          <button class="calc-key calc-op calc-eq" data-key="=" type="button">=</button>
-          <button class="calc-key" data-key="0" type="button">0</button>
-          <button class="calc-key" data-key="." type="button">.</button>
-          <button class="btn-primary calc-apply" id="calcApplyBtn" type="button">この値を入力</button>
         </div>
       </div>
     </div>

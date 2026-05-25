@@ -50,14 +50,6 @@ const state = {
   preset: {
     editingId: null,
   },
-  calc: {
-    display: '0',
-    acc: null,
-    op: null,
-    justEval: false,
-    targetInput: null,
-    targetLabel: '',
-  },
 };
 
 // ---- 永続化 ----
@@ -1055,135 +1047,6 @@ function flashSync(msg, cls = '') {
   flashSync._t = setTimeout(() => { el.textContent = ''; el.className = 'sync-status'; }, 2500);
 }
 
-// ==========================================================
-// 電卓
-// ==========================================================
-function findInputLabel(input) {
-  const pfc = input.closest('.pfc-input')?.querySelector('.pfc-input-label');
-  if (pfc) return pfc.textContent.trim();
-  const s = input.closest('.settings-row')?.querySelector('.settings-row-label');
-  if (s) return s.textContent.trim();
-  const e = input.closest('.entry-field')?.querySelector('.entry-field-label');
-  if (e) return e.textContent.trim();
-  return input.placeholder || input.name || '入力欄';
-}
-
-function openCalc() {
-  const c = state.calc;
-  const lbl = document.getElementById('calcTargetLabel');
-  if (!c.targetInput || !document.body.contains(c.targetInput)) {
-    lbl.textContent = 'まず数値欄をタップしてから電卓を開いてください';
-    lbl.classList.remove('bound');
-    c.display = '0';
-  } else {
-    lbl.textContent = `「${c.targetLabel || '入力欄'}」に入力`;
-    lbl.classList.add('bound');
-    const v = c.targetInput.value.toString();
-    c.display = v && !isNaN(Number(v)) ? v : '0';
-  }
-  c.acc = null;
-  c.op = null;
-  c.justEval = false;
-  renderCalcDisplay();
-  document.getElementById('calcModal').hidden = false;
-}
-function closeCalc() {
-  document.getElementById('calcModal').hidden = true;
-}
-function renderCalcDisplay() {
-  document.getElementById('calcDisplay').textContent = state.calc.display;
-}
-function fmtCalc(n) {
-  if (!Number.isFinite(n)) return '0';
-  const r = Math.round(n * 1e6) / 1e6;
-  return Number.isInteger(r) ? r.toString() : parseFloat(r.toFixed(6)).toString();
-}
-function compute(a, b, op) {
-  if (op === '+') return a + b;
-  if (op === '-') return a - b;
-  if (op === '×') return a * b;
-  if (op === '÷') return b === 0 ? 0 : a / b;
-  return b;
-}
-function calcInput(key) {
-  const c = state.calc;
-  if (/^[0-9]$/.test(key)) {
-    if (c.display === '0' || c.justEval) {
-      c.display = key;
-      c.justEval = false;
-    } else if (c.display.length < 14) {
-      c.display += key;
-    }
-  } else if (key === '.') {
-    if (c.justEval) { c.display = '0'; c.justEval = false; }
-    if (!c.display.includes('.')) c.display += '.';
-  } else if (key === 'AC') {
-    c.display = '0'; c.acc = null; c.op = null; c.justEval = false;
-  } else if (key === 'back') {
-    if (c.justEval) {
-      c.display = '0'; c.justEval = false;
-    } else if (c.display.length > 1) {
-      c.display = c.display.slice(0, -1);
-    } else {
-      c.display = '0';
-    }
-  } else if (['+', '-', '×', '÷'].includes(key)) {
-    const cur = parseFloat(c.display) || 0;
-    if (c.op != null && !c.justEval) {
-      c.acc = compute(c.acc || 0, cur, c.op);
-      c.display = fmtCalc(c.acc);
-    } else {
-      c.acc = cur;
-    }
-    c.op = key;
-    c.justEval = true;
-  } else if (key === '=') {
-    if (c.op != null && c.acc != null) {
-      const cur = parseFloat(c.display) || 0;
-      c.acc = compute(c.acc, cur, c.op);
-      c.display = fmtCalc(c.acc);
-      c.op = null;
-      c.justEval = true;
-    }
-  }
-  renderCalcDisplay();
-}
-function applyCalc() {
-  const c = state.calc;
-  if (!c.targetInput || !document.body.contains(c.targetInput)) {
-    closeCalc();
-    return;
-  }
-  // 末尾の op が残っていれば実行
-  if (c.op != null && c.acc != null && !c.justEval) {
-    const cur = parseFloat(c.display) || 0;
-    c.acc = compute(c.acc, cur, c.op);
-    c.display = fmtCalc(c.acc);
-  }
-  c.targetInput.value = c.display;
-  c.targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-  closeCalc();
-}
-function bindCalcInputTracking() {
-  document.querySelectorAll('input[inputmode="decimal"], input[inputmode="numeric"]').forEach(input => {
-    input.addEventListener('focus', () => {
-      state.calc.targetInput = input;
-      state.calc.targetLabel = findInputLabel(input);
-    });
-  });
-}
-
-function setupFabAutoHide() {
-  const fab = document.getElementById('fabCalc');
-  const modals = document.querySelectorAll('.modal');
-  const update = () => {
-    const anyOpen = Array.from(modals).some(m => !m.hidden);
-    fab.style.display = anyOpen ? 'none' : 'flex';
-  };
-  const obs = new MutationObserver(update);
-  modals.forEach(m => obs.observe(m, { attributes: true, attributeFilter: ['hidden'] }));
-  update();
-}
 
 // ==========================================================
 // イベント / 初期化
@@ -1240,18 +1103,6 @@ function bindEvents() {
   document.getElementById('pushAllBtn').addEventListener('click', pushAllToGas);
   document.getElementById('exportData').addEventListener('click', exportData);
 
-  // 電卓
-  bindCalcInputTracking();
-  setupFabAutoHide();
-  document.getElementById('fabCalc').addEventListener('click', openCalc);
-  document.getElementById('closeCalcBtn').addEventListener('click', closeCalc);
-  document.getElementById('calcApplyBtn').addEventListener('click', applyCalc);
-  document.querySelectorAll('.calc-key').forEach(b => {
-    b.addEventListener('click', () => calcInput(b.dataset.key));
-  });
-  document.getElementById('calcModal').addEventListener('click', e => {
-    if (e.target.id === 'calcModal') closeCalc();
-  });
 }
 
 function init() {
